@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Speed Reader</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0f;
+      --surface: #17171a;
+      --surface2: #1e1e22;
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.14);
+      --text: #f0f0f0;
+      --muted: #888;
+      --accent: #4f8ef7;
+      --accent-dim: rgba(79,142,247,0.15);
+      --green: #3ecf74;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 4rem;
+    }
+
+    header {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2.5rem;
+    }
+
+    .logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+      cursor: pointer;
+      user-select: none;
+      text-decoration: none;
+      transition: opacity 0.15s;
+    }
+
+    .logo:hover { opacity: 0.75; }
+    .logo span { color: var(--muted); font-weight: 400; }
+
+    .tagline {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    main { width: 100%; max-width: 680px; }
+
+    /* ── Input section ── */
+    #input-section {}
+
+    .section-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 180px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      padding: 14px 16px;
+      resize: vertical;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    textarea:focus { border-color: var(--accent); }
+    textarea::placeholder { color: var(--muted); }
+
+    /* Stats row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .stat-value.dim { color: #444; font-size: 18px; }
+
+    .stat-card.highlight { border-color: var(--accent-dim); }
+    .stat-card.highlight .stat-value { color: var(--accent); }
+
+    /* Speed control */
+    .speed-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 16px 0 6px;
+    }
+
+    .speed-row label {
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      flex: 1;
+      height: 4px;
+      background: var(--surface2);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+    .speed-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      min-width: 68px;
+      text-align: right;
+    }
+
+    /* Start button */
+    .start-btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 13px;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      letter-spacing: 0.01em;
+    }
+
+    .start-btn:hover { opacity: 0.88; }
+    .start-btn:active { transform: scale(0.99); }
+    .start-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+    /* ── Reader section ── */
+    #reader-section { display: none; }
+
+    .reader-display {
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    #sr-word {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 48px;
+      font-weight: 600;
+      color: #fff;
+      text-align: center;
+      padding: 1.5rem 2rem;
+      white-space: nowrap;
+      overflow: hidden;
+      max-width: 100%;
+      letter-spacing: -0.01em;
+    }
+
+    /* Progress */
+    .progress-bar {
+      height: 3px;
+      background: var(--surface2);
+      border-radius: 2px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    #progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.15s linear;
+    }
+
+    .reader-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    #time-remaining { color: var(--accent); }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .ctrl-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 1px solid var(--border2);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .ctrl-btn:hover { background: var(--surface2); border-color: var(--border2); }
+    .ctrl-btn:active { transform: scale(0.94); }
+    .ctrl-btn.primary { background: var(--accent); border-color: transparent; color: #fff; width: 56px; height: 56px; font-size: 22px; }
+    .ctrl-btn.primary:hover { opacity: 0.88; }
+
+    /* SVG icons inline */
+    .icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; vertical-align: middle; }
+    .ctrl-btn.primary .icon { width: 24px; height: 24px; }
+
+    footer {
+      margin-top: 3rem;
+      font-size: 12px;
+      color: #333;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo" id="logo-home" role="button" tabindex="0" title="Volver al inicio" aria-label="Volver al inicio">speed<span>reader</span></div>
+    <div class="tagline">Lee más rápido, retiene más</div>
+  </header>
+
+  <main>
+    <!-- INPUT SECTION -->
+    <div id="input-section">
+      <p class="section-label">Tu texto</p>
+      <textarea id="sr-textarea" placeholder="Pega o escribe el texto que quieres leer..."></textarea>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Palabras</div>
+          <div class="stat-value dim" id="stat-words">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Caracteres</div>
+          <div class="stat-value dim" id="stat-chars">—</div>
+        </div>
+        <div class="stat-card highlight">
+          <div class="stat-label">Tiempo estimado</div>
+          <div class="stat-value dim" id="stat-time">—</div>
+        </div>
+      </div>
+
+      <div class="speed-row">
+        <label>Velocidad</label>
+        <input type="range" id="sr-speed" min="100" max="1200" step="50" value="300" />
+        <span class="speed-value" id="sr-speed-val">300 WPM</span>
+      </div>
+
+      <button class="start-btn" id="sr-start-btn" disabled>
+        Comenzar lectura
+      </button>
+    </div>
+
+    <!-- READER SECTION -->
+    <div id="reader-section">
+      <div class="reader-display">
+        <span id="sr-word">•</span>
+      </div>
+
+      <div class="progress-bar">
+        <div id="progress-fill"></div>
+      </div>
+
+      <div class="reader-meta">
+        <span id="sr-meta">— WPM · 0%</span>
+        <span id="time-remaining"></span>
+      </div>
+
+      <div class="controls">
+        <!-- Reiniciar -->
+        <button class="ctrl-btn" id="btn-restart" title="Reiniciar" aria-label="Reiniciar">
+          <svg class="icon" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+        </button>
+        <!-- Play / Pause -->
+        <button class="ctrl-btn primary" id="btn-playpause" aria-label="Pausar">
+          <svg class="icon" id="icon-playpause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+        </button>
+        <!-- Cambiar texto -->
+        <button class="ctrl-btn" id="btn-back" title="Cambiar texto" aria-label="Cambiar texto">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </button>
+      </div>
+
+      <div class="speed-row">
+        <label>Velocidad</label>
+        <input type="range" id="sr-speed2" min="100" max="1200" step="50" value="300" />
+        <span class="speed-value" id="sr-speed-val2">300 WPM</span>
+      </div>
+    </div>
+  </main>
+
+  <footer>Speed Reader · sin límite de texto · funciona sin conexión</footer>
+
+  <script>
+    const textarea    = document.getElementById('sr-textarea');
+    const startBtn    = document.getElementById('sr-start-btn');
+    const inputSec    = document.getElementById('input-section');
+    const readerSec   = document.getElementById('reader-section');
+    const wordEl      = document.getElementById('sr-word');
+    const metaEl      = document.getElementById('sr-meta');
+    const timeEl      = document.getElementById('time-remaining');
+    const progFill    = document.getElementById('progress-fill');
+    const btnPlay     = document.getElementById('btn-playpause');
+    const btnRestart  = document.getElementById('btn-restart');
+    const btnBack     = document.getElementById('btn-back');
+    const slider1     = document.getElementById('sr-speed');
+    const sliderVal1  = document.getElementById('sr-speed-val');
+    const slider2     = document.getElementById('sr-speed2');
+    const sliderVal2  = document.getElementById('sr-speed-val2');
+    const iconPlay    = document.getElementById('icon-playpause');
+
+    const statWords = document.getElementById('stat-words');
+    const statChars = document.getElementById('stat-chars');
+    const statTime  = document.getElementById('stat-time');
+
+    const PAUSE_SVG = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+    const PLAY_SVG  = '<polygon points="5 3 19 12 5 21 5 3"/>';
+
+    let words = [], idx = 0, timer = null, wpm = 300, running = false;
+
+    function formatTime(s) {
+      if (s < 60) return s + 's';
+      const m = Math.floor(s / 60), r = s % 60;
+      return r > 0 ? m + 'min ' + r + 's' : m + 'min';
+    }
+
+    function updateStats() {
+      const text = textarea.value.trim();
+      if (!text) {
+        statWords.textContent = '—'; statWords.className = 'stat-value dim';
+        statChars.textContent = '—'; statChars.className = 'stat-value dim';
+        statTime.textContent  = '—'; statTime.className  = 'stat-value dim';
+        startBtn.disabled = true;
+        return;
+      }
+      const wc = text.split(/\s+/).filter(w => w.length > 0).length;
+      const cc = textarea.value.length;
+      const secs = Math.round((wc / wpm) * 60);
+      statWords.textContent = wc.toLocaleString('es-MX'); statWords.className = 'stat-value';
+      statChars.textContent = cc.toLocaleString('es-MX'); statChars.className = 'stat-value';
+      statTime.textContent  = formatTime(secs);            statTime.className  = 'stat-value';
+      startBtn.disabled = false;
+    }
+
+    function syncSliders(val) {
+      wpm = val;
+      slider1.value = val; sliderVal1.textContent = val + ' WPM';
+      slider2.value = val; sliderVal2.textContent = val + ' WPM';
+    }
+
+    textarea.addEventListener('input', updateStats);
+
+    slider1.addEventListener('input', () => {
+      syncSliders(parseInt(slider1.value));
+      updateStats();
+      if (running) { clearInterval(timer); startLoop(); }
+    });
+
+    slider2.addEventListener('input', () => {
+      syncSliders(parseInt(slider2.value));
+      if (running) { clearInterval(timer); startLoop(); }
+    });
+
+    startBtn.addEventListener('click', () => {
+      const text = textarea.value.trim();
+      if (!text) return;
+      words = text.split(/\s+/).filter(w => w.length > 0);
+      idx = 0;
+      inputSec.style.display = 'none';
+      readerSec.style.display = 'block';
+      running = false;        // start paused
+      showWord();
+      updateIcon();           // show play icon    });
+
+    function goHome() {
+      clearInterval(timer); running = false;
+      readerSec.style.display = 'none';
+      inputSec.style.display = 'block';
+      wordEl.textContent = '•';
+      progFill.style.width = '0%';
+      updateStats();
+    }
+
+    document.getElementById('logo-home').addEventListener('click', goHome);
+    document.getElementById('logo-home').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') goHome(); });
+
+    function startLoop() {
+      const ms = Math.round(60000 / wpm);
+      timer = setInterval(() => {
+        idx++;
+        if (idx >= words.length) {
+          clearInterval(timer); running = false;
+          wordEl.textContent = '✓';
+          progFill.style.width = '100%';
+          metaEl.textContent = wpm + ' WPM · 100%';
+          timeEl.textContent = 'Completado';
+          updateIcon(); return;
+        }
+        showWord();
+      }, ms);
+    }
+
+    function fitWord() {
+      const len = wordEl.textContent.length;
+      let size = 48;
+      if (len > 12) size = 32;
+      else if (len > 9) size = 38;
+      else if (len > 6) size = 44;
+      wordEl.style.fontSize = size + 'px';
+    }
+
+    function showWord() {
+      wordEl.textContent = words[idx];
+      fitWord();
+      const pct = Math.round(((idx + 1) / words.length) * 100);
+      progFill.style.width = pct + '%';
+      metaEl.textContent = wpm + ' WPM · ' + pct + '%';
+      const left = Math.round(((words.length - idx - 1) / wpm) * 60);
+      timeEl.textContent = left > 0 ? '~' + formatTime(left) + ' restante' : '';
+    }
+
+    function updateIcon() {
+      iconPlay.innerHTML = running ? PAUSE_SVG : PLAY_SVG;
+      btnPlay.setAttribute('aria-label', running ? 'Pausar' : 'Reanudar');
+    }
+
+    btnPlay.addEventListener('click', () => {
+      if (idx >= words.length) return;
+      if (running) { clearInterval(timer); running = false; }
+      else { running = true; startLoop(); }
+      updateIcon();
+    });
+
+    btnRestart.addEventListener('click', () => {
+      clearInterval(timer);
+      idx = 0; running = true;
+      updateIcon(); showWord(); startLoop();
+    });
+
+    btnBack.addEventListener('click', goHome);
+  </script>
+</body>
+</html>
